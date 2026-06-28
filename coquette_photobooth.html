@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cherry Booth 🍒</title>
+<style>
+  :root{
+    --red:#b91c1c;
+    --red-deep:#7f1d1d;
+    --red-bright:#dc2626;
+    --cream:#fdf6ec;
+    --navy:#1c2333;
+    --paper:#fffdf7;
+    --ink:#2b2b2b;
+    --line:#e8c9c9;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    font-family:'Courier New', monospace;
+    background:var(--navy);
+    color:var(--ink);
+    min-height:100vh;
+  }
+
+  body{
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 6px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 12px 60px;
+  }
+
+  h1.title{
+    font-family:'Brush Script MT', cursive, 'Courier New', monospace;
+    font-style:italic;
+    font-size:2.6rem;
+    color:var(--red-bright);
+    text-shadow: 2px 2px 0 #fff, 3px 3px 0 rgba(0,0,0,0.3);
+    margin:8px 0 2px;
+    letter-spacing:1px;
+    text-align:center;
+  }
+  .subtitle{
+    color:#f3d9d9;
+    font-size:0.8rem;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    margin-bottom:18px;
+    text-align:center;
+  }
+
+  /* ============ STAGE / CAMERA AREA ============ */
+  .stage{
+    position:relative;
+    width:min(360px, 92vw);
+  }
+
+  .gingham-strip{
+    position:absolute;
+    top:-18px;
+    left:-18px;
+    right:-18px;
+    height:90px;
+    background-image:
+      linear-gradient(45deg, transparent 48%, var(--red) 48%, var(--red) 52%, transparent 52%),
+      linear-gradient(-45deg, transparent 48%, var(--red) 48%, var(--red) 52%, transparent 52%),
+      repeating-linear-gradient(0deg, var(--red) 0 16px, var(--cream) 16px 32px),
+      repeating-linear-gradient(90deg, var(--red) 0 16px, var(--cream) 16px 32px);
+    background-blend-mode:multiply;
+    background-color:var(--cream);
+    border-radius:18px 18px 0 0;
+    z-index:0;
+    opacity:0.9;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  .basket{
+    position:absolute;
+    top:-58px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:3;
+    width:140px;
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,0.4));
+  }
+
+  .camera-card{
+    position:relative;
+    z-index:1;
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(var(--paper) 0 27px, var(--line) 27px 28px);
+    border:8px solid var(--red);
+    border-radius:10px;
+    padding:18px 14px 16px;
+    margin-top:36px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 2px rgba(255,255,255,0.5);
+  }
+
+  .spiral{
+    position:absolute;
+    left:-10px;
+    top:14px;
+    bottom:14px;
+    width:18px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    z-index:2;
+  }
+  .spiral .ring{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    border:3px solid #8a8a8a;
+    background:radial-gradient(circle at 30% 30%, #ddd, #999);
+    box-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  video, canvas.shot-canvas{
+    width:100%;
+    border-radius:4px;
+    background:#000;
+    display:block;
+  }
+
+  .video-wrap{
+    position:relative;
+    border:6px solid #fff;
+    box-shadow:0 0 0 2px var(--red), 0 6px 16px rgba(0,0,0,0.4);
+    border-radius:6px;
+    overflow:hidden;
+  }
+
+  .countdown-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.25);
+    font-family:'Courier New', monospace;
+    font-weight:bold;
+    font-size:5rem;
+    color:#fff;
+    text-shadow:0 0 20px var(--red-bright), 2px 2px 0 #000;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.15s;
+  }
+  .countdown-overlay.show{opacity:1;}
+
+  .flash{
+    position:absolute;
+    inset:0;
+    background:#fff;
+    opacity:0;
+    pointer-events:none;
+  }
+  .flash.fire{
+    animation:flashpop 0.35s ease-out;
+  }
+  @keyframes flashpop{
+    0%{opacity:0.95;}
+    100%{opacity:0;}
+  }
+
+  .shots-row{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+  }
+  .shot-slot{
+    flex:1;
+    aspect-ratio:4/3;
+    background:#111 repeating-linear-gradient(45deg, #1a1a1a 0 6px, #111 6px 12px);
+    border:3px solid var(--red);
+    border-radius:4px;
+    overflow:hidden;
+    position:relative;
+  }
+  .shot-slot img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .shot-slot .num{
+    position:absolute;
+    bottom:2px;
+    right:4px;
+    font-size:0.65rem;
+    color:rgba(255,255,255,0.6);
+  }
+
+  .controls{
+    margin-top:18px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  button{
+    font-family:'Courier New', monospace;
+    font-weight:bold;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-size:0.85rem;
+    border:none;
+    border-radius:999px;
+    padding:12px 22px;
+    cursor:pointer;
+    transition:transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  button:active{transform:scale(0.95);}
+  button:focus-visible{outline:3px solid #fff; outline-offset:2px;}
+
+  .btn-primary{
+    background:linear-gradient(180deg, var(--red-bright), var(--red-deep));
+    color:#fff;
+    box-shadow:0 4px 0 #5b1414, 0 6px 12px rgba(0,0,0,0.4);
+  }
+  .btn-primary:hover{box-shadow:0 4px 0 #5b1414, 0 8px 18px rgba(220,38,38,0.5);}
+  .btn-primary:disabled{opacity:0.5; cursor:not-allowed;}
+
+  .btn-secondary{
+    background:var(--cream);
+    color:var(--red-deep);
+    box-shadow:0 4px 0 #c9b9a0, 0 6px 12px rgba(0,0,0,0.3);
+  }
+
+  .status-line{
+    margin-top:10px;
+    text-align:center;
+    font-size:0.75rem;
+    color:#f3d9d9;
+    min-height:1.2em;
+  }
+
+  /* ============ RESULT / FINAL FRAME ============ */
+  .result-wrap{
+    display:none;
+    margin-top:30px;
+    width:min(380px, 94vw);
+  }
+  .result-wrap.show{display:block;}
+
+  .frame-outer{
+    position:relative;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 40%),
+      var(--navy);
+    border-radius:26px;
+    padding:30px 16px 26px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.6);
+  }
+
+  .gingham-bg{
+    position:absolute;
+    inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, var(--red) 0 14px, var(--cream) 14px 28px),
+      repeating-linear-gradient(90deg, var(--red) 0 14px, var(--cream) 14px 28px);
+    background-blend-mode:multiply;
+    background-color:var(--cream);
+    opacity:0.16;
+  }
+
+  .corduroy{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:62%;
+    background:repeating-linear-gradient(90deg, #1c2333 0 5px, #232b41 5px 9px);
+    clip-path: ellipse(75% 60% at 50% 100%);
+  }
+
+  .basket-final{
+    position:relative;
+    z-index:3;
+    width:46%;
+    margin:0 auto 6px;
+    display:block;
+    filter:drop-shadow(0 8px 10px rgba(0,0,0,0.45));
+  }
+
+  .notebook{
+    position:relative;
+    z-index:2;
+    background:var(--paper);
+    background-image:repeating-linear-gradient(var(--paper) 0 22px, var(--line) 22px 23px);
+    border:6px solid var(--red);
+    border-radius:8px;
+    margin-top:-8px;
+    padding:16px 14px 18px;
+    box-shadow:0 14px 26px rgba(0,0,0,0.5);
+  }
+
+  .strip-area{
+    position:relative;
+    display:flex;
+    justify-content:center;
+  }
+
+  .receipt{
+    position:absolute;
+    left:8%;
+    top:-6%;
+    width:46%;
+    background:#f4f1e6;
+    font-size:0.5rem;
+    line-height:1.25;
+    padding:10px 8px;
+    color:#333;
+    transform:rotate(-7deg);
+    box-shadow:0 6px 14px rgba(0,0,0,0.35);
+    font-family:'Courier New', monospace;
+    z-index:1;
+    border-radius:2px;
+  }
+  .receipt::before, .receipt::after{
+    content:"";
+    position:absolute;
+    left:0; right:0;
+    height:8px;
+    background:repeating-linear-gradient(90deg, transparent 0 4px, #f4f1e6 4px 8px);
+  }
+  .receipt::before{top:-4px;}
+  .receipt::after{bottom:-4px;}
+
+  .polaroid-strip{
+    position:relative;
+    z-index:2;
+    background:#fff;
+    border-radius:6px;
+    padding:8px 8px 14px;
+    width:62%;
+    box-shadow:0 10px 24px rgba(0,0,0,0.45);
+    transform:rotate(2deg);
+  }
+  .polaroid-strip .frame-photo{
+    width:100%;
+    aspect-ratio:4/3.1;
+    background:#111;
+    border-radius:2px;
+    overflow:hidden;
+    margin-bottom:8px;
+  }
+  .polaroid-strip .frame-photo:last-child{margin-bottom:0;}
+  .polaroid-strip .frame-photo img{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+
+  .babygirl-tag{
+    position:absolute;
+    right:2%;
+    top:30%;
+    font-family:'Brush Script MT', cursive;
+    font-style:italic;
+    font-size:1.3rem;
+    color:#fff;
+    background:var(--red-bright);
+    padding:4px 10px;
+    border-radius:4px;
+    transform:rotate(8deg);
+    box-shadow:0 4px 8px rgba(0,0,0,0.4);
+    z-index:3;
+  }
+
+  .girls-tag{
+    position:absolute;
+    left:4%;
+    bottom:18%;
+    font-family:'Brush Script MT', cursive;
+    font-style:italic;
+    color:var(--red-bright);
+    font-size:1.1rem;
+    background:#fff;
+    padding:2px 8px;
+    border-radius:3px;
+    transform:rotate(-6deg);
+    z-index:3;
+    box-shadow:0 3px 6px rgba(0,0,0,0.3);
+  }
+
+  .exclaim{
+    position:absolute;
+    left:2%;
+    top:2%;
+    font-size:1.4rem;
+    font-weight:bold;
+    color:var(--red-bright);
+    text-shadow:1px 1px 0 #fff;
+    transform:rotate(-8deg);
+    z-index:3;
+  }
+
+  .sticker{
+    position:absolute;
+    z-index:3;
+    pointer-events:none;
+  }
+
+  /* small decorative svg-based fruit + star stickers */
+  .sticker.cherry-a{ right:-2%; top:38%; width:54px; transform:rotate(12deg);}
+  .sticker.cherry-b{ right:0%; bottom:14%; width:46px; transform:rotate(-8deg);}
+  .sticker.cherry-c{ left:38%; bottom:-2%; width:50px; transform:rotate(4deg);}
+  .sticker.strawberry-a{ left:-4%; bottom:6%; width:64px; transform:rotate(-10deg);}
+  .sticker.star-a{ left:2%; bottom:32%; width:30px; transform:rotate(8deg);}
+  .sticker.star-b{ left:6%; bottom:24%; width:22px; transform:rotate(-10deg);}
+  .sticker.rocket-a{ right:6%; bottom:0%; width:46px; transform:rotate(18deg);}
+  .sticker.heart-a{ left:10%; top:6%; width:20px;}
+
+  .footer-credit{
+    text-align:center;
+    color:#f3d9d9;
+    font-size:0.65rem;
+    margin-top:14px;
+    letter-spacing:1px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .flash.fire{animation:none;}
+    button{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<h1 class="title">cherry booth</h1>
+<p class="subtitle">📸 strawberry &amp; cherry photobooth</p>
+
+<!-- ===================== CAMERA STAGE ===================== -->
+<div class="stage" id="stage">
+  <svg class="basket" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="8" width="88" height="14" rx="6" fill="#e8c46a" stroke="#b8923f" stroke-width="2"/>
+    <path d="M14 20 L20 64 Q22 70 30 70 L70 70 Q78 70 80 64 L86 20 Z" fill="#c81e2b" stroke="#8c1018" stroke-width="2"/>
+    <g stroke="#8c1018" stroke-width="1.4" opacity="0.85">
+      <line x1="22" y1="24" x2="26" y2="68"/>
+      <line x1="30" y1="24" x2="33" y2="68"/>
+      <line x1="38" y1="24" x2="40" y2="68"/>
+      <line x1="46" y1="24" x2="46" y2="68"/>
+      <line x1="54" y1="24" x2="54" y2="68"/>
+      <line x1="62" y1="24" x2="60" y2="68"/>
+      <line x1="70" y1="24" x2="67" y2="68"/>
+      <line x1="78" y1="24" x2="74" y2="68"/>
+      <line x1="16" y1="33" x2="84" y2="33"/>
+      <line x1="18" y1="44" x2="82" y2="44"/>
+      <line x1="20" y1="55" x2="80" y2="55"/>
+    </g>
+    <path d="M2 14 Q4 4 16 6 L14 14 Z" fill="#e8c46a" stroke="#b8923f" stroke-width="2"/>
+    <path d="M98 14 Q96 4 84 6 L86 14 Z" fill="#e8c46a" stroke="#b8923f" stroke-width="2"/>
+  </svg>
+
+  <div class="gingham-strip"></div>
+
+  <div class="camera-card">
+    <div class="spiral">
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    </div>
+
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="flash" id="flash"></div>
+      <div class="countdown-overlay" id="countdown">3</div>
+    </div>
+
+    <div class="shots-row" id="shotsRow">
+      <div class="shot-slot" data-slot="0"><span class="num">01</span></div>
+      <div class="shot-slot" data-slot="1"><span class="num">02</span></div>
+      <div class="shot-slot" data-slot="2"><span class="num">03</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="startBtn">mulai kamera</button>
+    <button class="btn-primary" id="captureBtn" disabled>📸 jepret 3x</button>
+    <button class="btn-secondary" id="retakeBtn" disabled>ulang</button>
+  </div>
+  <p class="status-line" id="statusLine">klik "mulai kamera" untuk mengizinkan akses webcam.</p>
+</div>
+
+<!-- ===================== FINAL RESULT FRAME ===================== -->
+<div class="result-wrap" id="resultWrap">
+  <div class="frame-outer" id="frameOuter">
+    <div class="gingham-bg"></div>
+    <div class="corduroy"></div>
+
+    <svg class="basket-final" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="8" width="88" height="14" rx="6" fill="#e8c46a" stroke="#b8923f" stroke-width="2"/>
+      <path d="M14 20 L20 64 Q22 70 30 70 L70 70 Q78 70 80 64 L86 20 Z" fill="#c81e2b" stroke="#8c1018" stroke-width="2"/>
+      <g stroke="#8c1018" stroke-width="1.4" opacity="0.85">
+        <line x1="22" y1="24" x2="26" y2="68"/>
+        <line x1="30" y1="24" x2="33" y2="68"/>
+        <line x1="38" y1="24" x2="40" y2="68"/>
+        <line x1="46" y1="24" x2="46" y2="68"/>
+        <line x1="54" y1="24" x2="54" y2="68"/>
+        <line x1="62" y1="24" x2="60" y2="68"/>
+        <line x1="70" y1="24" x2="67" y2="68"/>
+        <line x1="78" y1="24" x2="74" y2="68"/>
+        <line x1="16" y1="33" x2="84" y2="33"/>
+        <line x1="18" y1="44" x2="82" y2="44"/>
+        <line x1="20" y1="55" x2="80" y2="55"/>
+      </g>
+      <path d="M2 14 Q4 4 16 6 L14 14 Z" fill="#e8c46a" stroke="#b8923f" stroke-width="2"/>
+      <path d="M98 14 Q96 4 84 6 L86 14 Z" fill="#e8c46a" stroke="#b8923f" stroke-width="2"/>
+    </svg>
+
+    <div class="notebook">
+      <div class="exclaim">!!</div>
+
+      <div class="strip-area">
+        <div class="receipt">
+          ORDER #0628<br>
+          FRIDAY NIGHT<br>
+          ----------------<br>
+          QTY ITEM<br>
+          01 GOOD VIBES<br>
+          02 SUNSET LIGHT<br>
+          03 LOUD LAUGH<br>
+          04 BEST FRIEND<br>
+          05 FAST MOMENT<br>
+          06 SWEET HEART<br>
+          07 CHERRY KISS<br>
+          08 ENCORE<br>
+          ----------------<br>
+          TOTAL: PRICELESS<br>
+          THANK YOU FOR<br>
+          VISITING :)
+        </div>
+
+        <div class="polaroid-strip" id="polaroidStrip">
+          <div class="frame-photo"><img id="finalImg0" src="" alt=""></div>
+          <div class="frame-photo"><img id="finalImg1" src="" alt=""></div>
+          <div class="frame-photo"><img id="finalImg2" src="" alt=""></div>
+        </div>
+
+        <div class="babygirl-tag">babygirl</div>
+      </div>
+
+      <div class="girls-tag">girls ♡</div>
+    </div>
+
+    <!-- decorative SVG stickers -->
+    <svg class="sticker cherry-a" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 6 C28 16 22 20 22 20" stroke="#3a6b2a" stroke-width="2.5" fill="none"/>
+      <path d="M30 6 C33 14 36 17 36 17" stroke="#3a6b2a" stroke-width="2.5" fill="none"/>
+      <circle cx="20" cy="38" r="13" fill="#c8102e" stroke="#7a0a1c" stroke-width="2"/>
+      <circle cx="40" cy="34" r="13" fill="#d8203e" stroke="#7a0a1c" stroke-width="2"/>
+      <ellipse cx="16" cy="33" rx="3" ry="4" fill="#ff8a8a" opacity="0.7"/>
+      <ellipse cx="36" cy="29" rx="3" ry="4" fill="#ff9a9a" opacity="0.7"/>
+    </svg>
+
+    <svg class="sticker cherry-b" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 6 C28 16 22 20 22 20" stroke="#3a6b2a" stroke-width="2.5" fill="none"/>
+      <path d="M30 6 C33 14 36 17 36 17" stroke="#3a6b2a" stroke-width="2.5" fill="none"/>
+      <circle cx="20" cy="38" r="13" fill="#c8102e" stroke="#7a0a1c" stroke-width="2"/>
+      <circle cx="40" cy="34" r="13" fill="#d8203e" stroke="#7a0a1c" stroke-width="2"/>
+      <ellipse cx="16" cy="33" rx="3" ry="4" fill="#ff8a8a" opacity="0.7"/>
+    </svg>
+
+    <svg class="sticker cherry-c" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 6 C28 16 22 20 22 20" stroke="#3a6b2a" stroke-width="2.5" fill="none"/>
+      <path d="M30 6 C33 14 36 17 36 17" stroke="#3a6b2a" stroke-width="2.5" fill="none"/>
+      <circle cx="20" cy="38" r="13" fill="#c8102e" stroke="#7a0a1c" stroke-width="2"/>
+      <circle cx="40" cy="34" r="13" fill="#d8203e" stroke="#7a0a1c" stroke-width="2"/>
+      <ellipse cx="16" cy="33" rx="3" ry="4" fill="#ff8a8a" opacity="0.7"/>
+    </svg>
+
+    <svg class="sticker strawberry-a" viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 12 L30 4 L38 12 Z" fill="#3a6b2a"/>
+      <path d="M16 14 L30 6 L44 14 Z" fill="#4d8a3a"/>
+      <path d="M14 16 C8 30 12 50 30 64 C48 50 52 30 46 16 C38 22 22 22 14 16Z" fill="#e8233a" stroke="#a3142a" stroke-width="2"/>
+      <g fill="#ffe9b0">
+        <circle cx="22" cy="28" r="1.6"/>
+        <circle cx="30" cy="24" r="1.6"/>
+        <circle cx="38" cy="28" r="1.6"/>
+        <circle cx="20" cy="38" r="1.6"/>
+        <circle cx="30" cy="36" r="1.6"/>
+        <circle cx="40" cy="38" r="1.6"/>
+        <circle cx="24" cy="48" r="1.6"/>
+        <circle cx="36" cy="48" r="1.6"/>
+        <circle cx="30" cy="56" r="1.6"/>
+      </g>
+    </svg>
+
+    <svg class="sticker star-a" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 2 L25 15 L38 15 L27 23 L31 36 L20 28 L9 36 L13 23 L2 15 L15 15 Z" fill="#c8102e" stroke="#7a0a1c" stroke-width="1.5"/>
+    </svg>
+    <svg class="sticker star-b" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 2 L25 15 L38 15 L27 23 L31 36 L20 28 L9 36 L13 23 L2 15 L15 15 Z" fill="#c8102e" stroke="#7a0a1c" stroke-width="1.5"/>
+    </svg>
+
+    <svg class="sticker rocket-a" viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 4 C40 16 42 36 38 54 L22 54 C18 36 20 16 30 4Z" fill="#f4f1e6" stroke="#333" stroke-width="2"/>
+      <circle cx="30" cy="26" r="6" fill="#7fb3d5" stroke="#333" stroke-width="1.5"/>
+      <path d="M22 40 L8 56 L22 52Z" fill="#c8102e" stroke="#7a0a1c" stroke-width="1.5"/>
+      <path d="M38 40 L52 56 L38 52Z" fill="#c8102e" stroke="#7a0a1c" stroke-width="1.5"/>
+      <path d="M24 54 L36 54 L33 70 L27 70Z" fill="#d8203e" stroke="#7a0a1c" stroke-width="1.5"/>
+      <path d="M26 70 L34 70 L30 80Z" fill="#f4a13a"/>
+    </svg>
+
+    <svg class="sticker heart-a" viewBox="0 0 32 28" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 26 C16 26 2 17 2 8 C2 2 8 0 11 4 C13 6 16 10 16 10 C16 10 19 6 21 4 C24 0 30 2 30 8 C30 17 16 26 16 26Z" fill="#c8102e" stroke="#7a0a1c" stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="downloadBtn">⬇ unduh hasil</button>
+    <button class="btn-secondary" id="newSessionBtn">sesi baru</button>
+  </div>
+  <p class="footer-credit">made with 🍓 native html · css · js</p>
+</div>
+
+<script>
+(function(){
+  const video = document.getElementById('video');
+  const startBtn = document.getElementById('startBtn');
+  const captureBtn = document.getElementById('captureBtn');
+  const retakeBtn = document.getElementById('retakeBtn');
+  const statusLine = document.getElementById('statusLine');
+  const countdownEl = document.getElementById('countdown');
+  const flashEl = document.getElementById('flash');
+  const shotsRow = document.getElementById('shotsRow');
+  const resultWrap = document.getElementById('resultWrap');
+  const stage = document.getElementById('stage');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const newSessionBtn = document.getElementById('newSessionBtn');
+  const frameOuter = document.getElementById('frameOuter');
+
+  let stream = null;
+  let shots = []; // dataURLs
+
+  async function startCamera(){
+    statusLine.textContent = 'meminta izin kamera...';
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width:{ideal:640}, height:{ideal:480} },
+        audio:false
+      });
+      video.srcObject = stream;
+      captureBtn.disabled = false;
+      startBtn.disabled = true;
+      statusLine.textContent = 'kamera siap. klik "jepret 3x" saat sudah siap berpose!';
+    }catch(err){
+      console.error(err);
+      statusLine.textContent = 'tidak bisa mengakses kamera: ' + err.message + ' (cek izin browser)';
+    }
+  }
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  async function runCountdown(n){
+    for(let i=n;i>=1;i--){
+      countdownEl.textContent = i;
+      countdownEl.classList.add('show');
+      await sleep(700);
+      countdownEl.classList.remove('show');
+      await sleep(150);
+    }
+  }
+
+  function takeSnapshot(){
+    const c = document.createElement('canvas');
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+    // crop to 4:3-ish portrait-friendly square-ish for polaroid slot
+    c.width = vw;
+    c.height = vh;
+    const ctx = c.getContext('2d');
+    // mirror for natural selfie view
+    ctx.translate(vw,0);
+    ctx.scale(-1,1);
+    ctx.drawImage(video,0,0,vw,vh);
+    return c.toDataURL('image/jpeg', 0.92);
+  }
+
+  function flash(){
+    flashEl.classList.remove('fire');
+    // restart animation
+    requestAnimationFrame(()=>{
+      flashEl.classList.add('fire');
+    });
+  }
+
+  function placeShotInSlot(idx, dataUrl){
+    const slot = shotsRow.querySelector('[data-slot="'+idx+'"]');
+    slot.innerHTML = '<img src="'+dataUrl+'" alt="hasil jepretan '+(idx+1)+'"><span class="num">0'+(idx+1)+'</span>';
+  }
+
+  async function captureSequence(){
+    captureBtn.disabled = true;
+    retakeBtn.disabled = true;
+    shots = [];
+    for(let i=0;i<3;i++){
+      statusLine.textContent = 'bersiap untuk foto ke-'+(i+1)+' dari 3...';
+      await runCountdown(3);
+      flash();
+      await sleep(120);
+      const data = takeSnapshot();
+      shots.push(data);
+      placeShotInSlot(i, data);
+      statusLine.textContent = 'foto ke-'+(i+1)+' tersimpan!';
+      await sleep(500);
+    }
+    statusLine.textContent = 'selesai! menyusun frame hasil...';
+    retakeBtn.disabled = false;
+    buildFinalFrame();
+  }
+
+  function buildFinalFrame(){
+    document.getElementById('finalImg0').src = shots[0];
+    document.getElementById('finalImg1').src = shots[1];
+    document.getElementById('finalImg2').src = shots[2];
+    resultWrap.classList.add('show');
+    stage.style.display = 'none';
+    resultWrap.scrollIntoView({behavior:'smooth', block:'start'});
+    statusLine.textContent = '';
+  }
+
+  function resetToCamera(){
+    shots = [];
+    [0,1,2].forEach(i=>{
+      const slot = shotsRow.querySelector('[data-slot="'+i+'"]');
+      slot.innerHTML = '<span class="num">0'+(i+1)+'</span>';
+    });
+    resultWrap.classList.remove('show');
+    stage.style.display = '';
+    captureBtn.disabled = false;
+    retakeBtn.disabled = true;
+    statusLine.textContent = 'siap mengambil ulang. klik "jepret 3x".';
+  }
+
+  async function downloadResult(){
+    statusLine.textContent='';
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = 'menyiapkan...';
+    try{
+      const dataUrl = await renderFrameToImage(frameOuter);
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'cherry-booth-' + Date.now() + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }catch(e){
+      console.error(e);
+      alert('Gagal membuat gambar unduhan: ' + e.message);
+    }finally{
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '⬇ unduh hasil';
+    }
+  }
+
+  // Renders the decorative frame (DOM) into a single canvas/png using
+  // native APIs only: draws background shapes + photos manually,
+  // since we avoid external libraries (no html2canvas).
+  async function renderFrameToImage(frameEl){
+    const rect = frameEl.getBoundingClientRect();
+    const W = Math.round(rect.width * 2);
+    const H = Math.round(rect.height * 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const scale = W / rect.width;
+    ctx.scale(scale, scale);
+
+    // background navy
+    ctx.fillStyle = '#1c2333';
+    roundRect(ctx, 0,0, rect.width, rect.height, 26);
+    ctx.fill();
+
+    // gingham overlay (approx)
+    ctx.save();
+    roundRect(ctx,0,0,rect.width, rect.height,26);
+    ctx.clip();
+    ctx.globalAlpha = 0.16;
+    const cell = 14;
+    for(let y=0;y<rect.height;y+=cell*2){
+      for(let x=0;x<rect.width;x+=cell*2){
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(x,y,cell,cell);
+        ctx.fillRect(x+cell,y+cell,cell,cell);
+        ctx.fillStyle = '#fdf6ec';
+        ctx.fillRect(x+cell,y,cell,cell);
+        ctx.fillRect(x,y+cell,cell,cell);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // corduroy bottom ellipse
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(rect.width/2, rect.height, rect.width*0.75, rect.height*0.6, 0,0, Math.PI*2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = '#1c2333';
+    ctx.fillRect(0, rect.height*0.38, rect.width, rect.height*0.62);
+    for(let x=0;x<rect.width;x+=9){
+      ctx.fillStyle = (x/9)%2===0 ? '#232b41' : '#1c2333';
+      ctx.fillRect(x, rect.height*0.38, 5, rect.height*0.62);
+    }
+    ctx.restore();
+
+    // basket (simple svg path drawn manually, scaled)
+    drawBasket(ctx, rect.width/2, 38, 90);
+
+    // notebook card
+    const nb = {x: rect.width*0.08, y: rect.height*0.20, w: rect.width*0.84, h: rect.height*0.74};
+    ctx.fillStyle = '#fffdf7';
+    roundRect(ctx, nb.x, nb.y, nb.w, nb.h, 8);
+    ctx.fill();
+    ctx.save();
+    roundRect(ctx, nb.x, nb.y, nb.w, nb.h, 8);
+    ctx.clip();
+    ctx.strokeStyle = '#e8c9c9';
+    ctx.lineWidth = 1;
+    for(let ly = nb.y; ly < nb.y+nb.h; ly += 22){
+      ctx.beginPath();
+      ctx.moveTo(nb.x, ly);
+      ctx.lineTo(nb.x+nb.w, ly);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#b91c1c';
+    roundRect(ctx, nb.x, nb.y, nb.w, nb.h, 8);
+    ctx.stroke();
+
+    // receipt
+    ctx.save();
+    ctx.translate(nb.x + nb.w*0.08 + nb.w*0.23, nb.y + nb.h*0.16);
+    ctx.rotate(-7*Math.PI/180);
+    const recW = nb.w*0.46, recH = nb.h*0.62;
+    ctx.fillStyle = '#f4f1e6';
+    ctx.fillRect(-recW/2, -recH/2, recW, recH);
+    ctx.fillStyle = '#333';
+    ctx.font = '7px "Courier New", monospace';
+    const lines = ['ORDER #0628','FRIDAY NIGHT','----------------','QTY ITEM','01 GOOD VIBES','02 SUNSET LIGHT','03 LOUD LAUGH','04 BEST FRIEND','05 FAST MOMENT','06 SWEET HEART','07 CHERRY KISS','08 ENCORE','----------------','TOTAL: PRICELESS','THANK YOU FOR','VISITING :)'];
+    let ly = -recH/2 + 10;
+    lines.forEach(line=>{
+      ctx.fillText(line, -recW/2+6, ly);
+      ly += 9;
+    });
+    ctx.restore();
+
+    // polaroid strip with photos
+    const stripW = nb.w*0.62;
+    const stripH = nb.h*0.86;
+    const stripX = nb.x + nb.w/2 - stripW/2;
+    const stripY = nb.y + nb.h*0.06;
+    ctx.save();
+    ctx.translate(stripX+stripW/2, stripY+stripH/2);
+    ctx.rotate(2*Math.PI/180);
+    ctx.translate(-stripW/2, -stripH/2);
+    ctx.fillStyle = '#ffffff';
+    roundRect(ctx, 0,0, stripW, stripH, 6);
+    ctx.fill();
+
+    const pad = stripW*0.06;
+    const photoW = stripW - pad*2;
+    const gap = stripH*0.025;
+    const photoH = (stripH - pad*1.6 - gap*2) / 3;
+    const imgs = [
+      document.getElementById('finalImg0'),
+      document.getElementById('finalImg1'),
+      document.getElementById('finalImg2')
+    ];
+    for(let i=0;i<3;i++){
+      const py = pad*0.7 + i*(photoH+gap);
+      ctx.save();
+      roundRect(ctx, pad, py, photoW, photoH, 2);
+      ctx.clip();
+      drawImageCover(ctx, imgs[i], pad, py, photoW, photoH);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // babygirl tag
+    ctx.save();
+    ctx.translate(nb.x + nb.w*0.86, nb.y + nb.h*0.34);
+    ctx.rotate(8*Math.PI/180);
+    ctx.fillStyle = '#dc2626';
+    roundRect(ctx, -34,-12, 68, 24, 4);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'italic bold 13px "Brush Script MT", cursive';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('babygirl', 0, 1);
+    ctx.restore();
+
+    // girls tag
+    ctx.save();
+    ctx.translate(nb.x + nb.w*0.16, nb.y + nb.h*0.86);
+    ctx.rotate(-6*Math.PI/180);
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, -30,-10,60,20,3);
+    ctx.fill();
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'italic bold 12px "Brush Script MT", cursive';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('girls ♡', 0, 1);
+    ctx.restore();
+
+    // exclaim
+    ctx.save();
+    ctx.translate(nb.x + nb.w*0.06, nb.y + nb.h*0.04);
+    ctx.rotate(-8*Math.PI/180);
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'bold 20px "Courier New", monospace';
+    ctx.textAlign='left';
+    ctx.textBaseline='top';
+    ctx.fillText('!!', 0,0);
+    ctx.restore();
+
+    // stickers: cherries / strawberry / stars / rocket / heart
+    drawCherry(ctx, rect.width*0.94, rect.height*0.50, 0.9, 12);
+    drawCherry(ctx, rect.width*0.96, rect.height*0.78, 0.7, -8);
+    drawCherry(ctx, rect.width*0.55, rect.height*0.985, 0.8, 4);
+    drawStrawberry(ctx, rect.width*0.02, rect.height*0.90, 1.0, -10);
+    drawStar(ctx, rect.width*0.08, rect.height*0.70, 0.7, 8);
+    drawStar(ctx, rect.width*0.12, rect.height*0.62, 0.5, -10);
+    drawRocket(ctx, rect.width*0.86, rect.height*0.98, 0.7, 18);
+    drawHeart(ctx, rect.width*0.16, rect.height*0.10, 0.6, 0);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function drawImageCover(ctx, img, x, y, w, h){
+    if(!img || !img.naturalWidth) return;
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const ir = iw/ih, tr = w/h;
+    let sx,sy,sw,sh;
+    if(ir > tr){
+      sh = ih; sw = ih*tr;
+      sx = (iw-sw)/2; sy = 0;
+    }else{
+      sw = iw; sh = iw/tr;
+      sx = 0; sy = (ih-sh)/2;
+    }
+    ctx.drawImage(img, sx,sy,sw,sh, x,y,w,h);
+  }
+
+  function drawBasket(ctx, cx, cy, size){
+    ctx.save();
+    ctx.translate(cx - size/2, cy - size*0.35);
+    const s = size/100;
+    ctx.scale(s,s);
+    ctx.fillStyle = '#e8c46a';
+    ctx.strokeStyle = '#b8923f';
+    ctx.lineWidth = 2;
+    roundRect(ctx,6,8,88,14,6); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(14,20); ctx.lineTo(20,64);
+    ctx.quadraticCurveTo(22,70,30,70);
+    ctx.lineTo(70,70);
+    ctx.quadraticCurveTo(78,70,80,64);
+    ctx.lineTo(86,20);
+    ctx.closePath();
+    ctx.fillStyle = '#c81e2b';
+    ctx.strokeStyle = '#8c1018';
+    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(140,16,24,0.85)';
+    ctx.lineWidth = 1.4;
+    const xs = [22,30,38,46,54,62,70,78];
+    xs.forEach(x=>{
+      ctx.beginPath(); ctx.moveTo(x,24); ctx.lineTo(x-2,68); ctx.stroke();
+    });
+    [33,44,55].forEach(y=>{
+      ctx.beginPath(); ctx.moveTo(16+ (y-33)*0.2, y); ctx.lineTo(84-(y-33)*0.2, y); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function drawCherry(ctx, x, y, scale, rotDeg){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(rotDeg*Math.PI/180);
+    ctx.scale(scale,scale);
+    ctx.strokeStyle = '#3a6b2a';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(30,6); ctx.quadraticCurveTo(28,16,22,20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(30,6); ctx.quadraticCurveTo(33,14,36,17); ctx.stroke();
+    ctx.fillStyle = '#c8102e'; ctx.strokeStyle = '#7a0a1c'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(20,38,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d8203e';
+    ctx.beginPath(); ctx.arc(40,34,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawStrawberry(ctx,x,y,scale,rotDeg){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(rotDeg*Math.PI/180);
+    ctx.scale(scale,scale);
+    ctx.fillStyle = '#4d8a3a';
+    ctx.beginPath(); ctx.moveTo(16,14); ctx.lineTo(30,6); ctx.lineTo(44,14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e8233a'; ctx.strokeStyle = '#a3142a'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(14,16);
+    ctx.bezierCurveTo(8,30,12,50,30,64);
+    ctx.bezierCurveTo(48,50,52,30,46,16);
+    ctx.bezierCurveTo(38,22,22,22,14,16);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffe9b0';
+    const seeds = [[22,28],[30,24],[38,28],[20,38],[30,36],[40,38],[24,48],[36,48],[30,56]];
+    seeds.forEach(([sx,sy])=>{
+      ctx.beginPath(); ctx.ellipse(sx,sy,1.6,1.6,0,0,Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawStar(ctx,x,y,scale,rotDeg){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(rotDeg*Math.PI/180);
+    ctx.scale(scale,scale);
+    ctx.fillStyle = '#c8102e'; ctx.strokeStyle = '#7a0a1c'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const pts = [[20,2],[25,15],[38,15],[27,23],[31,36],[20,28],[9,36],[13,23],[2,15],[15,15]];
+    ctx.moveTo(pts[0][0],pts[0][1]);
+    pts.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawRocket(ctx,x,y,scale,rotDeg){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(rotDeg*Math.PI/180);
+    ctx.scale(scale,scale);
+    ctx.fillStyle = '#f4f1e6'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(30,4);
+    ctx.bezierCurveTo(40,16,42,36,38,54);
+    ctx.lineTo(22,54);
+    ctx.bezierCurveTo(18,36,20,16,30,4);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#7fb3d5';
+    ctx.beginPath(); ctx.arc(30,26,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c8102e';
+    ctx.beginPath(); ctx.moveTo(22,40); ctx.lineTo(8,56); ctx.lineTo(22,52); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(38,40); ctx.lineTo(52,56); ctx.lineTo(38,52); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d8203e';
+    ctx.beginPath(); ctx.moveTo(24,54); ctx.lineTo(36,54); ctx.lineTo(33,70); ctx.lineTo(27,70); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f4a13a';
+    ctx.beginPath(); ctx.moveTo(26,70); ctx.lineTo(34,70); ctx.lineTo(30,80); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHeart(ctx,x,y,scale,rotDeg){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(rotDeg*Math.PI/180);
+    ctx.scale(scale,scale);
+    ctx.fillStyle = '#c8102e'; ctx.strokeStyle = '#7a0a1c'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(16,26);
+    ctx.bezierCurveTo(16,26,2,17,2,8);
+    ctx.bezierCurveTo(2,2,8,0,11,4);
+    ctx.bezierCurveTo(13,6,16,10,16,10);
+    ctx.bezierCurveTo(16,10,19,6,21,4);
+    ctx.bezierCurveTo(24,0,30,2,30,8);
+    ctx.bezierCurveTo(30,17,16,26,16,26);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  startBtn.addEventListener('click', startCamera);
+  captureBtn.addEventListener('click', captureSequence);
+  retakeBtn.addEventListener('click', resetToCamera);
+  downloadBtn.addEventListener('click', downloadResult);
+  newSessionBtn.addEventListener('click', resetToCamera);
+
+})();
+</script>
+
+</body>
+</html>
